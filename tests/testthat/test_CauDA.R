@@ -14,7 +14,8 @@ make_simple_confounded_dataset <- function(nsamples=1000,
   # edge matrix to show that tax.c has a causal effect on tax.x
   edge.dictionary <- matrix(c(0, 0,
                               1, 0),
-                            nrow=2)
+                            nrow=2,
+                            byrow=T)
   rownames(edge.dictionary) <- c("tax.x", "tax.c")
   colnames(edge.dictionary) <- c("tax.x", "tax.c")
 
