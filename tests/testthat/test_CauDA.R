@@ -40,25 +40,30 @@ make_simple_dataset <- function(nsamples){
       )
 }
 
+# set some params
+c.on.x <- 0.5
+x.on.y <- 0.5
+c.on.y <- 0.4
+# make a confounded dataset for testing
+main.confounded.data <- make_simple_confounded_dataset(1000,
+                                       c_on_x=c.on.x,
+                                       x_on_y=x.on.y,
+                                       c_on_y=c.on.y)
 
+# test that the class works
 testthat::test_that("create dataset", {
   x <- make_simple_confounded_dataset(500)
   expect_s4_class(x, "CauDAbox")
+  expect_s4_class(main.confounded.data, "CauDAbox")
 }
 )
 
+# test that properly regressing confounded data
+# returns correct coefficients
 testthat::test_that("confounded taxa have correct coef", {
-  c.on.x <- 0.5
-  x.on.y <- 0.5
-  c.on.y <- 0.4
-  data <- make_simple_confounded_dataset(1000,
-                                         c_on_x=c.on.x,
-                                         x_on_y=x.on.y,
-                                         c_on_y=c.on.y)
-
-  y <- data@metadata[,1]
-  tax.x <- data@tableX[,1]
-  tax.c <- data@tableX[,2]
+  y <- main.confounded.data@metadata[,1]
+  tax.x <- main.confounded.data@tableX[,1]
+  tax.c <- main.confounded.data@tableX[,2]
   mod <- lm(y ~ tax.x + tax.c)
 
   expect_equal(coef(mod)[2:3],
@@ -68,18 +73,12 @@ testthat::test_that("confounded taxa have correct coef", {
 }
 )
 
+# test that improperly regressing confounded data
+# returns the wrong coefficients
 testthat::test_that("confounded taxon is confounded", {
-  c.on.x <- 0.5
-  x.on.y <- 0.5
-  c.on.y <- 0.4
-  data <- make_simple_confounded_dataset(1000,
-                                         c_on_x=c.on.x,
-                                         x_on_y=x.on.y,
-                                         c_on_y=c.on.y)
-
-  y <- data@metadata[,1]
-  tax.x <- data@tableX[,1]
-  tax.c <- data@tableX[,2]
+  y <- main.confounded.data@metadata[,1]
+  tax.x <- main.confounded.data@tableX[,1]
+  tax.c <- main.confounded.data@tableX[,2]
   mod <- lm(y ~ tax.x) # LEAVE OUT THE CONFOUNDER
 
   expect_failure(
@@ -90,33 +89,22 @@ testthat::test_that("confounded taxon is confounded", {
 }
 )
 
+# Test that extracting the formula from a CauDAbox
+# returns the right formula
 testthat::test_that("RHS_from_edgemat gets the right stuff", {
-  c.on.x <- 0.5
-  x.on.y <- 0.5
-  c.on.y <- 0.4
-  data <- make_simple_confounded_dataset(1000,
-                                         c_on_x=c.on.x,
-                                         x_on_y=x.on.y,
-                                         c_on_y=c.on.y)
-
-  expect_equal(RHS_from_edgemat(data, "tax.x"),
+  expect_equal(RHS_from_edgemat(main.confounded.data,
+                                "tax.x"),
                "tax.x + tax.c")
 }
 )
 
+# Test that regressing on the returned formula
+# returns the correct coefficients
 testthat::test_that("RHS_from_edgemat gets the right model output", {
-  c.on.x <- 0.5
-  x.on.y <- 0.5
-  c.on.y <- 0.4
-  data <- make_simple_confounded_dataset(1000,
-                                         c_on_x=c.on.x,
-                                         x_on_y=x.on.y,
-                                         c_on_y=c.on.y)
-
-  rhs <- RHS_from_edgemat(data, "tax.x")
-  y <- data@metadata[,1]
+  rhs <- RHS_from_edgemat(main.confounded.data, "tax.x")
+  y <- main.confounded.data@metadata[,1]
   mod <- lm(as.formula(paste0("y ~ ", rhs)),
-            data=make_model_df(data, "tax.x"))
+            data=make_model_df(main.confounded.data, "tax.x"))
 
   expect_equal(coef(mod)[2:3],
                c(x.on.y, c.on.y),
