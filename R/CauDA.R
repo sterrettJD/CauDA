@@ -1,3 +1,23 @@
+caudabox_from_csvs <- function(metadata, tableX, dictionary){
+  paths <- c(metadata, tableX, dictionary)
+  files.exist <- file.exists(paths)
+  if(sum(files.exist) < 3){
+    stop(paste("Not all files provided exist. Please check",
+               paths[which(!files.exist)]))
+  }
+
+  m <- read.csv(metadata)
+  X <- read.csv(tableX)
+  d <- read.csv(dictionary)
+  d <- as.matrix(d, by.row=F, nrow=nrow(d))
+  row.names(d) <- colnames(d)
+
+  return(new("CauDAbox",
+             metadata=as.matrix(m, by.row=F, nrow=nrow(m)),
+             tableX=as.matrix(X, by.row=F, nrow=nrow(X)),
+             dictionary=d))
+}
+
 get_cols_to_include <- function(caudabox, column){
   dict <- caudabox@dictionary
 
