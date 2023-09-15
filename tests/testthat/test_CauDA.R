@@ -139,3 +139,13 @@ testthat::test_that("caudabox_from_csvs works",{
 
 }
 )
+
+
+# Test that an error is raised when trying to read in nonexistent files
+testthat::test_that("caudabox_from_csvs stops for nonexistent files", {
+expect_error(caudabox_from_csvs(metadata="fake1",
+                                tableX="fake2",
+                                dictionary="fake3"))
+}
+)
+
