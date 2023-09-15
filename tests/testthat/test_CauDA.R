@@ -113,3 +113,29 @@ testthat::test_that("RHS_from_edgemat gets the right model output", {
 }
 )
 
+# Test that we can read the files to create a caudabox
+testthat::test_that("caudabox_from_csvs works",{
+  files.exist <- file.exists(c("../testdata/metadata.csv",
+                               "../testdata/tableX.csv",
+                               "../testdata/dictionary.csv"))
+  # if the files don't exist yet, write them
+  if(sum(files.exist) < 3){
+    write.csv(main.confounded.data@metadata, file="../testdata/metadata.csv", row.names=F,
+              quote=F)
+    write.csv(main.confounded.data@tableX, file="../testdata/tableX.csv", row.names=F,
+              quote=F)
+    write.csv(main.confounded.data@dictionary, "../testdata/dictionary.csv", row.names=F,
+              quote=F)
+  }
+
+  reread.box <- caudabox_from_csvs(metadata="../testdata/metadata.csv",
+                                 tableX="../testdata/tableX.csv",
+                                 dictionary="../testdata/dictionary.csv")
+  # Since the reference doesn't expect dimnames
+  dimnames(reread.box@metadata) <- NULL
+
+  expect_equal(reread.box,
+               main.confounded.data)
+
+}
+)
