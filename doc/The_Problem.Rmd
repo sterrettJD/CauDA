@@ -1,0 +1,166 @@
+---
+title: "The Problem"
+author: "John Sterrett"
+date: "2023-09-15"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+print(getwd())
+source("../R/Cauda.R")
+source("../R/AllClasses.R")
+
+library(ggplot2)
+library(magrittr)
+```
+
+#
+
+```{r simulate_func, include=FALSE}
+
+make_simple_confounded_dataset <- function(nsamples=1000,
+                                           c_on_x=0.5,
+                                           x_on_y=0.5,
+                                           c_on_y=0.4){
+  set.seed(42)
+  # confounder
+  tax.c <- rnbinom(n=nsamples, size=200, prob=0.3)
+  # taxon X (independent var)
+  tax.x <- c_on_x*tax.c + (1-c_on_x)*rnbinom(n=nsamples, size=200, prob=0.3)
+  # matrix of taxa
+  count.table <- matrix(data=c(tax.x, tax.c), nrow=nsamples)
+  colnames(count.table) <- c("tax.x", "tax.c")
+
+  # Y (dependent var)
+  y <- x_on_y*tax.x +
+       c_on_y*tax.c +
+       (1-x_on_y-c_on_y)*rnorm(nsamples, mean=mean(tax.c), sd=sd(tax.c))
+
+  # edge matrix to show that tax.c has a causal effect on tax.x
+  edge.dictionary <- matrix(c(0,         0,
+                              c_on_x!=0, 0),
+                            nrow=2,
+                            byrow=T)
+  rownames(edge.dictionary) <- c("tax.x", "tax.c")
+  colnames(edge.dictionary) <- c("tax.x", "tax.c")
+
+  new("CauDAbox",
+      metadata=matrix(data=y, nrow=nsamples),
+      tableX=count.table,
+      dictionary=edge.dictionary
+      )
+}
+
+```
+
+# Let's simulate some confounded data 
+In this case, there is no causal effect of taxon x on the outcome, 
+but it appears that there is due to confounding due to ecological interactions.
+
+- Our taxon "of interest" has no effect on the outcome
+- The confounding taxon has a negative effect on the taxon "of interest" (e.g., through direct predation)
+- The confounding taxon has a positive effect on the outcome
+
+```{r simulate}
+# set some params
+x.on.y <- 0  # Our taxon "of interest" has no effect on the outcome y
+c.on.x <- -0.9 # The confounding taxon has a negative effect on the taxon "of interest"
+c.on.y <- 0.5  # The confounding taxon has a positive effect on the outcome y
+
+# make a confounded dataset for testing
+confounded.data <- make_simple_confounded_dataset(1000,
+                                       c_on_x=c.on.x,
+                                       x_on_y=x.on.y,
+                                       c_on_y=c.on.y)
+
+colnames(confounded.data@metadata) <- c("depression")
+#confounded.data@metadata <- scale(confounded.data@metadata, scale=10)
+```
+
+# Plotting confounded data {.tabset}
+## Depression ~ Taxon X
+```{r plot_confounded}
+data <- cbind(confounded.data@metadata,
+             confounded.data@tableX)
+data <- as.data.frame(data)
+ggplot(data,
+       mapping=aes(y=depression, x=tax.x)) +
+  geom_point() + 
+  geom_smooth(method="lm",) +
+  labs(x="Taxon X", y="Depression score") +
+  theme_bw()
+```
+
+## Depression ~ Taxon C
+```{r plot_confounder}
+data <- cbind(confounded.data@metadata,
+              confounded.data@tableX)
+data <- as.data.frame(data)
+ggplot(data,
+       mapping=aes(y=depression, x=tax.c)) +
+  geom_point() + 
+  geom_smooth(method="lm",) +
+  labs(x="Taxon C", y="Depression score") +
+  theme_bw()
+```
+
+# Modeling the confounded data 
+
+## Depression ~ Taxon X only
+We can see below that because of the direct predation of taxon<sub>x</sub> by taxon<sub>c</sub>,
+it appears that taxon<sub>x</sub> is causing lower depression scores. 
+```{r}
+broom::tidy(lm(depression ~ tax.x, data=data)) %>%
+  knitr::kable()
+```
+
+## Depression ~ Taxon C only
+In this case, taxon<sub>c</sub> has the same coefficient that we specified earlier, unlike taxon<sub>x</sub>.
+```{r}
+broom::tidy(lm(depression ~ tax.c, data=data)) %>%
+  knitr::kable()
+```
+
+# The Solution?
+## Regressing Depression ~ Taxon X + Taxon C
+If we include the confounder in a regression with the taxon of interest, we recapture the actual effects of taxon<sub>x</sub> and taxon<sub>c</sub>.
+```{r}
+broom::tidy(lm(depression ~ tax.x + tax.c, data=data)) %>% 
+  knitr::kable()
+```
+
+## Visualizing the non-confounded effects of Taxon X
+If we regress out the effects of taxon<sub>c</sub> on taxon<sub>x</sub>, 
+we also see the correct effect of Taxon X on depression score, and we can visualize that!
+
+```{r}
+resids.tax.x <- residuals(lm(tax.x ~ tax.c, data=data))
+
+ggplot(mapping=aes(y=data$depression, x=resids.tax.x)) +
+  geom_point() + 
+  geom_smooth(method="lm",) +
+  labs(x="Adjusted Taxon X", y="Depression score") +
+  theme_bw()
+
+broom::tidy(lm(depression ~ resids.tax.x, data=data)) %>% 
+  knitr::kable()
+
+```
+
+# Final Thoughts
+The issue is not that there are confounders. We know how to control for confounders!
+In fact, many differential abundance tests (such as ANCOM-BC) allow users to specify
+their own model, which can include confounders. However, in differential abundance 
+packages, it is assumed that the confounders provided are relevant for every single 
+relationship (y ~ taxon<sub>x</sub> + covariate) being tested. This doesn't allow
+any room for taxon-specific ecological interactions or taxon-specific confounders.
+
+Of course, this could be done manually, but no single researcher should have to 
+manually specify every confounding ecological interaction within their 
+microbiome dataset (and I would posit that nobody can know all this info).
+
+
+
+
+
