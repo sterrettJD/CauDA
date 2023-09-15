@@ -13,6 +13,9 @@ source("../R/AllClasses.R")
 
 library(ggplot2)
 library(magrittr)
+library(ggdag)
+
+theme_set(theme_bw())
 ```
 
 #
@@ -54,13 +57,59 @@ make_simple_confounded_dataset <- function(nsamples=1000,
 
 ```
 
-# Let's simulate some confounded data 
-In this case, there is no causal effect of taxon x on the outcome, 
-but it appears that there is due to confounding due to ecological interactions.
+# Mock confounded dataset
+
+Imagine you're a gut-brain axis researcher studying the effects of the 
+gut microbiome on depression-like behavior in mice. 
+These mice have been engineered to have incredibly simple, 
+2-species gut microbiomes, with taxon<sub>x</sub> and taxon<sub>c</sub>.
+
+In this case, there is no causal effect of taxon<sub>x</sub> on depression-like 
+behavior, but taxon<sub>c</sub> does affect depression-like behavior.
+Additionally, taxon<sub>c</sub> produces a bacteriocin that is active against 
+taxon<sub>x</sub>.
+Because of the confounding from this ecological interaction, 
+there appears to be a negative effect of taxon<sub>x</sub> on depression.
+
+Our parameters:
 
 - Our taxon "of interest" has no effect on the outcome
 - The confounding taxon has a negative effect on the taxon "of interest" (e.g., through direct predation)
 - The confounding taxon has a positive effect on the outcome
+
+This can be visualized with the following directed acyclic graph (DAG)
+
+```{r, echo=F}
+tidy.dag.df <- dagify(
+      depression ~ tax.x,
+       depression ~ tax.c, 
+       tax.x ~ tax.c
+       ) %>% 
+  tidy_dagitty(layout=) %>%
+  dplyr::mutate(linetype = ifelse(((name=="tax.x") & (to=="depression")), 
+                                  "dashed", "solid")) %>%
+  as.data.frame()
+
+tidy.dag.df[tidy.dag.df$name=="tax.x", c("x", "y")] <- 0
+tidy.dag.df[tidy.dag.df$name=="depression", c("x", "y")] <- c(2,0)
+tidy.dag.df[tidy.dag.df$name=="tax.c", c("x", "y")] <- 1
+
+
+tidy.dag.df[!is.na(tidy.dag.df$to) & tidy.dag.df$to=="tax.x", c("xend", "yend")] <- 0
+tidy.dag.df[!is.na(tidy.dag.df$to) & tidy.dag.df$to=="depression", c("xend")] <- 1.95
+tidy.dag.df[!is.na(tidy.dag.df$to) & tidy.dag.df$to=="depression", c("yend")] <- 0
+tidy.dag.df[!is.na(tidy.dag.df$to) & tidy.dag.df$to=="tax.c", c("xend", "yend")] <- 1
+
+tidy.dag.df %>%
+  ggplot(aes(x=x, y=y, xend=xend, yend=yend)) +
+  geom_dag_point(size=25, colour="grey") + 
+  geom_dag_text(colour="black") + 
+  geom_dag_edges(aes(edge_linetype=linetype)) + 
+  xlim(-0.25, 2.25) +
+  ylim(-0.25, 1.25) +
+  theme_dag()
+
+```
 
 ```{r simulate}
 # set some params
@@ -88,8 +137,7 @@ ggplot(data,
        mapping=aes(y=depression, x=tax.x)) +
   geom_point() + 
   geom_smooth(method="lm",) +
-  labs(x="Taxon X", y="Depression score") +
-  theme_bw()
+  labs(x="Taxon X", y="Depression score")
 ```
 
 ## Depression ~ Taxon C
@@ -101,8 +149,7 @@ ggplot(data,
        mapping=aes(y=depression, x=tax.c)) +
   geom_point() + 
   geom_smooth(method="lm",) +
-  labs(x="Taxon C", y="Depression score") +
-  theme_bw()
+  labs(x="Taxon C", y="Depression score")
 ```
 
 # Modeling the confounded data 
@@ -140,8 +187,7 @@ resids.tax.x <- residuals(lm(tax.x ~ tax.c, data=data))
 ggplot(mapping=aes(y=data$depression, x=resids.tax.x)) +
   geom_point() + 
   geom_smooth(method="lm",) +
-  labs(x="Adjusted Taxon X", y="Depression score") +
-  theme_bw()
+  labs(x="Adjusted Taxon X", y="Depression score")
 
 broom::tidy(lm(depression ~ resids.tax.x, data=data)) %>% 
   knitr::kable()
