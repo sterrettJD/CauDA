@@ -24,7 +24,11 @@ To be determined. Currently a table of mediation output summary
 Should not be run on its own. Typically, the main workhorse function will handle this for you.
 }
 \examples{
-mediation_df <- data.frame(z = sample(LETTERS[1:2], 32, replace = T), mtcars)
-fit_mediation(y = rnorm(32), x_dir = rnorm(32), x_indir = rnorm(32), f = ~z, metadata = mediation_df)
+mediation_df <- data.frame(z = sample(LETTERS[1:2], 32, replace = TRUE), mtcars)
+fit_mediation(y = rnorm(32), 
+x_dir = rnorm(32), 
+x_indir = rnorm(32), 
+f = ~z, 
+metadata = mediation_df)
   
 }

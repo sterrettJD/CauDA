@@ -6,12 +6,19 @@
 #' @param f A formula object. Used to assess differential associations.
 #' @param metadata Additional information such as group or covariate values. 
 #' @return To be determined. Currently a table of mediation output summary
+#' @export
+#' @import mediation
+#' @importFrom stats glm update.formula
 #' @examples
-#' mediation_df <- data.frame(z = sample(LETTERS[1:2], 32, replace = T), mtcars)
-#' fit_mediation(y = rnorm(32), x_dir = rnorm(32), x_indir = rnorm(32), f = ~z, metadata = mediation_df)
+#' mediation_df <- data.frame(z = sample(LETTERS[1:2], 32, replace = TRUE), mtcars)
+#' fit_mediation(y = rnorm(32), 
+#' x_dir = rnorm(32), 
+#' x_indir = rnorm(32), 
+#' f = ~z, 
+#' metadata = mediation_df)
 #'   
 fit_mediation <- function(y, x_dir, x_indir, f, metadata){
-  require(mediation)
+  requireNamespace("mediation")
   
   #Collect all information in an object. 
   mediation_df <- data.frame(y = y, x_dir = x_dir, x_indir = x_indir, metadata)
@@ -56,7 +63,7 @@ fit_mediation <- function(y, x_dir, x_indir, f, metadata){
 #'    
 enframe_mediation <- function(res_mediate){
   return(matrix(
-    unlist(mediation_fit[c("d0","d0.ci","d0.p",      
+    unlist(res_mediate[c("d0","d0.ci","d0.p",      
                            "d1","d1.ci","d1.p",     
                            "z0","z0.ci","z0.p",
                            "z1","z1.ci","z1.p",
