@@ -1,8 +1,9 @@
 #' Generate a CauDAbox object from CSVs
-#' @description PLACEHOLDER
-#' @param metadata PLACEHOLDER
-#' @param tableX PLACEHOLDER
-#' @param dictionary PLACEHOLDER
+#' @description Should be used to read in data from csv files to create a CauDAbox.
+#' @param metadata This contains sample metadata, where samples are rows.
+#' @param tableX This contains the feature data (e.g., feature count table), where samples are rows
+#' @param dictionary This is a N x N edge matrix, where N=number of features in tableX, where each entry (row i, col j) indicates if feature i has a causal effect on feature j.
+#' @return A CauDAbox object with the metadata, tableX, and dictionary.
 #' @export
 #' @importFrom methods new
 #' @importFrom utils read.csv
@@ -14,10 +15,17 @@ caudabox_from_csvs <- function(metadata, tableX, dictionary){
     stop(paste("Not all files provided exist. Please check",
                paths[which(!files.exist)]))
   }
-
+  
+  # read data
   m <- read.csv(metadata)
   X <- read.csv(tableX)
   d <- read.csv(dictionary)
+  
+  if((nrow(d) != ncol(X)) | (ncol(d) != ncol(X))){
+    stop("The provided dictionary is not a square edge matrix with the same number of dimensions as tableX.")
+  }
+  
+  # convert dict to be a matrix with colnames the same as rownames
   d <- as.matrix(d, by.row=F, nrow=nrow(d))
   row.names(d) <- colnames(d)
 
