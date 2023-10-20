@@ -35,10 +35,11 @@ caudabox_from_csvs <- function(metadata, tableX, dictionary){
              dictionary=d))
 }
 
-#' PLACEHOLDER
+#' Assesses which columns to consider for inclusion in regression 
 #' @description PLACEHOLDER
 #' @param caudabox A caudabox object
-#' @param column PLACEHOLDER
+#' @param column The feature of interest in tableX
+#' @return A vector of other features that affect the feature of interest
 #' @export
 #' 
 get_cols_to_include <- function(caudabox, column){
@@ -49,10 +50,11 @@ get_cols_to_include <- function(caudabox, column){
   return(to.include)
 }
 
-#' PLACEHOLDER
+#' Build the right hand side (RHS) of a regression equation from the edge matrix
 #' @description PLACEHOLDER
-#' @param caudabox A caudabox object
-#' @param column PLACEHOLDER
+#' @param caudabox A cauDAbox object
+#' @param column The feature of interest in tableX
+#' @return A string representation of the RHS of the formula for the feature of interest
 #' @export
 #' 
 RHS_from_edgemat <- function(caudabox, column){
