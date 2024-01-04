@@ -69,7 +69,5 @@ jobs:
           git config --local user.email "$GITHUB_ACTOR@users.noreply.github.com"
           git add man/\* NAMESPACE
           git commit -m 'Automatic documentation'
-
-      - uses: r-lib/actions/pr-push@v2
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          git pull --ff-only
+          git push origin
