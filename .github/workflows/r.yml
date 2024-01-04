@@ -36,7 +36,6 @@ jobs:
         with:
           extra-packages: any::rcmdcheck, any::remotes
           
-        shell: Rscript {0}
       - name: Tests
         uses: r-lib/actions/check-r-package@v2
         with:
