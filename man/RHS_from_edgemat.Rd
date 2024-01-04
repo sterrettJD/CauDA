@@ -2,14 +2,17 @@
 % Please edit documentation in R/CauDA.R
 \name{RHS_from_edgemat}
 \alias{RHS_from_edgemat}
-\title{PLACEHOLDER}
+\title{Build the right hand side (RHS) of a regression equation from the edge matrix}
 \usage{
 RHS_from_edgemat(caudabox, column)
 }
 \arguments{
-\item{caudabox}{A caudabox object}
+\item{caudabox}{A cauDAbox object}
 
-\item{column}{PLACEHOLDER}
+\item{column}{The feature of interest in tableX}
+}
+\value{
+A string representation of the RHS of the formula for the feature of interest
 }
 \description{
 PLACEHOLDER

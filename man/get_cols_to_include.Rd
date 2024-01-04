@@ -2,14 +2,17 @@
 % Please edit documentation in R/CauDA.R
 \name{get_cols_to_include}
 \alias{get_cols_to_include}
-\title{PLACEHOLDER}
+\title{Assesses which columns to consider for inclusion in regression}
 \usage{
 get_cols_to_include(caudabox, column)
 }
 \arguments{
 \item{caudabox}{A caudabox object}
 
-\item{column}{PLACEHOLDER}
+\item{column}{The feature of interest in tableX}
+}
+\value{
+A vector of other features that affect the feature of interest
 }
 \description{
 PLACEHOLDER
